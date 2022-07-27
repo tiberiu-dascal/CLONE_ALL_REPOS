@@ -1,9 +1,8 @@
 import json
-import re
 import requests
 from git import Repo
 
-GIT_TOKEN = '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'
+GIT_TOKEN = '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'
 GIT_USER = 'tibix'
 GIT_URL=f'https://api.github.com/users/{GIT_USER}/repos'
 BASE_DIR='/Users/teebee/REPOS'
@@ -16,7 +15,6 @@ items = json.loads(json_url.text)
 
 repos = dict()
 
-# print(items)
 for item in items:
     repos[item['name']] = item['clone_url']
 
