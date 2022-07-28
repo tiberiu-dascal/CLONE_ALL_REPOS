@@ -1,32 +1,40 @@
 import os
-import json
-import requests
-from git import Repo
-
+from git import Repo      # GitPython used to clone remote repo to local (GitPython module)
+from github import Github # used to interact with GitHub API (PyGithub module)
+from git import exc as exc
 # You need to set a enviroment variable HOMEBREW_GITHUB_API_TOKEN 
 # and set it equal to your github token
 GIT_TOKEN = os.getenv('HOMEBREW_GITHUB_API_TOKEN')
-GIT_USER = 'tibix' # change this to match your user
-GIT_URL=f'https://api.github.com/users/{GIT_USER}/repos'
 BASE_DIR='/Users/teebee/REPOS' # change this to match you preference
 
-head = {'Authorization': 'token {}'.format(GIT_TOKEN)}
+#login with access token
+login  = Github(GIT_TOKEN)
 
-# Generate a list of all available repositories through json call to GitHUB API
-json_url = requests.get(GIT_URL, headers=head)
-items = json.loads(json_url.text)
+#get the user
+user  = login.get_user()
+
+my_repos = user.get_repos()
 
 # Initialize a dictionary that will store repo name and URL to clone the repo
 repos = dict()
 
 # Populate the repos dict
-for item in items:
-    repos[item['name']] = item['clone_url']
+for repo in my_repos:
+    repos[repo.name] = repo.clone_url
 
 # Loop through dict and try to clone the repositories in a local folder
+failed = 0
+success = 0
 for name, repo in repos.items():
-    print(f"Clonning repo {name} to {BASE_DIR}/{name} from {repo}")
+    print(f"Cloning repo #+- {name} -+#\n\tFrom: {repo}\n\tTo: {BASE_DIR}/{name}")
     try:
         Repo.clone_from(repo, BASE_DIR+"/"+name);
-    except:
-        print(f"ERROR: Could not clone repo {name}")
+        print("\tStatus: ✅\n")
+        success += 1
+    except exc.CommandError as e:
+        print(f"\tStatus: ⛔️: Repo #+- {name} -+# already exists and is not empty!\n")
+        failed += 1
+        continue
+
+# Display final statistics
+print(f"Checked {failed+success} repos: SUCCESS:  {success}, FAILED: {failed}")
