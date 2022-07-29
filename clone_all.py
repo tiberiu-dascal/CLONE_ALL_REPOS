@@ -1,7 +1,19 @@
 import os
-from git import Repo      # GitPython used to clone remote repo to local (GitPython module)
-from github import Github # used to interact with GitHub API (PyGithub module)
-from git import exc as exc
+
+try:
+    from git import Repo      # GitPython used to clone remote repo to local (GitPython module)
+    from git import exc as exc
+except:
+    os.system("pip install GitPython")
+    from git import Repo
+    from git import exc as exc
+
+try:
+    from github import Github # used to interact with GitHub API (PyGithub module)
+except:
+    os.system("pip install PyGithub")
+    from github import Github
+
 # You need to set a enviroment variable HOMEBREW_GITHUB_API_TOKEN 
 # and set it equal to your github token
 GIT_TOKEN = os.getenv('HOMEBREW_GITHUB_API_TOKEN')
