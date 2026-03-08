@@ -1,3 +1,4 @@
+import argparse
 import base64
 import os
 import subprocess
@@ -42,7 +43,11 @@ except ImportError:
     from github import Auth, Github
 
 
-BASE_DIR = f"{os.getenv('HOME')}/REPOS"  # change this to match your preference
+parser = argparse.ArgumentParser(description="Clone all GitHub repos for the authenticated user.")
+parser.add_argument("--dest", default=f"{os.getenv('HOME')}/REPOS", help="Destination directory (default: ~/REPOS)")
+args = parser.parse_args()
+
+BASE_DIR = args.dest
 os.makedirs(BASE_DIR, exist_ok=True)
 
 # login with access token
