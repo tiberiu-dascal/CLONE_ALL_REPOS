@@ -56,9 +56,8 @@ success = 0
 for name, repo in repos.items():
     print(f"Cloning repo #+- {name} -+#\n\tFrom: {repo}\n\tTo: {BASE_DIR}/{name}")
     try:
-        Repo.clone_from(
-            f"git@github.com:{user.login}/{name}.git", BASE_DIR + "/" + name
-        )
+        clone_url = f"https://{GITHUB_TOKEN}@github.com/{user.login}/{name}.git"
+        Repo.clone_from(clone_url, BASE_DIR + "/" + name)
         print("\tStatus: ✅\n")
         success += 1
     except exc.CommandError:
