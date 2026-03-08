@@ -1,60 +1,64 @@
 import base64
 import os
+import subprocess
+import sys
 
-# The script is expecting an environment variable called GITHUB_TOKEN to be present
-# and its value to be set to your github token
+# The script is expecting an environment variable called ENCODED_GITHUB_TOKEN to be present
+# and its value to be set to your base64-encoded github token
 
 encoded_env = os.getenv("ENCODED_GITHUB_TOKEN")
-print(encoded_env)
-decode_bytes = base64.b64decode(encoded_env)
-final_string = decode_bytes.decode("utf-8")
-GITHUB_TOKEN = final_string.replace("\n", "")
-
-
-if GITHUB_TOKEN is None:
+if encoded_env is None:
     print(
-        "You GitHub token is not set!\n Please make sure to configure your environment variable GITHUB_API_TOKEN and the run the program again!"
+        "Your GitHub token is not set!\n"
+        "Please make sure to configure your environment variable ENCODED_GITHUB_TOKEN and then run the program again!"
     )
-    exit(1)
+    sys.exit(1)
+
+GITHUB_TOKEN = base64.b64decode(encoded_env).decode("utf-8").strip()
+
+
+def install_package(package):
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", package, "--break-system-packages"],
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        print(f"Failed to install {package}:\n{result.stderr.decode()}")
+        sys.exit(1)
+
 
 try:
-    # GitPython used to clone remote repo to local (GitPython module)
     from git import Repo
     from git import exc as exc
-except:
-    os.system("pip install GitPython --break-system-packages")
+except ImportError:
+    install_package("GitPython")
     from git import Repo
     from git import exc as exc
 
 try:
-    # used to interact with GitHub API (PyGithub module)
     from github import Auth, Github
-except:
-    os.system("pip install PyGithub --break-system-packages")
+except ImportError:
+    install_package("PyGithub")
     from github import Auth, Github
 
-BASE_DIR = f"{os.getenv('HOME')}/REPOS"  # change this to match you preference
+
+BASE_DIR = f"{os.getenv('HOME')}/REPOS"  # change this to match your preference
+os.makedirs(BASE_DIR, exist_ok=True)
 
 # login with access token
 auth = Auth.Token(GITHUB_TOKEN)
 g = Github(auth=auth)
 
-# get the user
+# get the user and repos
 user = g.get_user()
 my_repos = user.get_repos()
-g.close()
-# Initialize a dictionary that will store repo name and URL to clone the repo
-repos = dict()
 
-# Populate the repos dict
-for repo in my_repos:
-    repos[repo.name] = repo.clone_url
-
-# Loop through dict and try to clone the repositories in a local folder
+# Loop through repos and try to clone them locally
 failed = 0
 success = 0
-for name, repo in repos.items():
-    print(f"Cloning repo #+- {name} -+#\n\tFrom: {repo}\n\tTo: {BASE_DIR}/{name}")
+for repo in my_repos:
+    name = repo.name
+    print(f"Cloning repo #+- {name} -+#\n\tFrom: {repo.clone_url}\n\tTo: {BASE_DIR}/{name}")
     try:
         clone_url = f"https://{GITHUB_TOKEN}@github.com/{user.login}/{name}.git"
         Repo.clone_from(clone_url, BASE_DIR + "/" + name)
@@ -63,7 +67,8 @@ for name, repo in repos.items():
     except exc.CommandError:
         print(f"\tStatus: ⛔️: Repo #+- {name} -+# already exists and is not empty!\n")
         failed += 1
-        continue
+
+g.close()
 
 # Display final statistics
-print(f"Checked {failed + success} repos: SUCCESS:  {success}, FAILED: {failed}")
+print(f"Checked {failed + success} repos: SUCCESS: {success}, FAILED: {failed}")
